@@ -63,7 +63,7 @@ DEFAULTS_CONF = {
 
 DEFAULTS_SESSION = {
     "highlights": "Default",
-    "duration": 0,
+    "duration": 30,
     "type_of_session": "Default",
     "speaker": "Default",
     "start_time": 0,
@@ -116,6 +116,12 @@ SESSION_BY_TYPE_GET_REQUEST = endpoints.ResourceContainer(
 
 SESSION_ADD_REQUEST = endpoints.ResourceContainer(
     websafeSessionKey=messages.StringField(1),
+)
+
+SESSION_DURATION_REQUEST = endpoints.ResourceContainer(
+    websafeConferenceKey=messages.StringField(1),
+    minDuration=messages.IntegerField(2, 0),
+    maxDuration=messages.IntegerField(3, 180),
 )
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -824,6 +830,24 @@ class ConferenceApi(remote.Service):
 
         return SessionForms(items=[self._copySessionToForm(session)\
                             for session in session_list]
+        )
+
+
+    @endpoints.method(SESSION_DURATION_REQUEST, SessionForms,
+                      path='conference/sessions/duration/{websafeConferenceKey}',
+                      http_method='GET', name='getSessionByDuration')
+    def getSessionsByDuration(self, request):
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
+        q = Session.query(ancestor=conf.key)
+        q = q.order(Session.duration)
+        q = q.filter(Session.duration > request.minDuration)
+        sessions = q.filter(Session.duration < request.maxDuration)
+
+        return SessionForms(items=[self._copySessionToForm(session)\
+                            for session in sessions]
         )
 
 api = endpoints.api_server([ConferenceApi]) # register API
