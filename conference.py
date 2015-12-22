@@ -768,6 +768,14 @@ class ConferenceApi(remote.Service):
         return self._sessionWishlist(request)
 
 
+    @endpoints.method(SESSION_ADD_REQUEST, BooleanMessage,
+            path='conference/sessions/unregister/{websafeSessionKey}',
+            http_method='POST', name='deleteSessionInWishlist')
+    def deleteSessionInWishlist(self, request):
+        """Register user for selected conference."""
+        return self._sessionWishlist(request, False)
+
+
     @endpoints.method(message_types.VoidMessage, SessionForms,
             path='conferences/sessions/attending',
             http_method='GET', name='getSessionsInWishlist')
