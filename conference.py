@@ -791,4 +791,67 @@ class ConferenceApi(remote.Service):
         )
 
 
+    @endpoints.method(SESSION_GET_REQUEST, SessionForms,
+                      path='conference/sessions/schedule/{websafeConferenceKey}',
+                      http_method='GET', name='getSessionSchedule')
+    def getSessionSchedule(self, request):
+        #get user and their sessions
+        prof = self._getProfileFromUser() # get user Profile
+        session_keys = [ndb.Key(urlsafe=wssk) for wssk in prof.sessionKeysInWishlist]
+        #list of sessions
+        wishlist_sessions = ndb.get_multi(session_keys)
+
+        # get conference and sessions in that conference
+        # make sure it's ordered by date and start time.
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
+        conf_id = ndb.Key(urlsafe=request.websafeConferenceKey).id()
+        p_key = ndb.Key(Profile, conf.organizerUserId)
+        c_key = ndb.Key(Conference, conf_id, parent=p_key)
+        q = Session.query(ancestor=c_key)
+        q = q.order(Session.date)
+        conf_sessions = q.order(Session.start_time)
+
+        # throw out all the sessions that aren't on the users wishlist
+        # I'd love to do a JOIN here, but datastore doesn't support it.
+        session_list = []
+        for cs in conf_sessions:
+            for ws in wishlist_sessions:
+                if ws.key.urlsafe() == cs.key.urlsafe():
+                    session_list.append(ws)
+
+        return SessionForms(items=[self._copySessionToForm(session)\
+                            for session in session_list]
+        )
+
 api = endpoints.api_server([ConferenceApi]) # register API
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
