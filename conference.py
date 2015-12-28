@@ -532,7 +532,7 @@ class ConferenceApi(remote.Service):
                     ', '.join(session.name for session in sessions_by_speaker),
                     conf.name)
             memcache.set(MEMCACHE_FEATURED_SPEAKER_KEY, announcement)
-            # Otherwise, leave the featured speaker as is.
+        # Otherwise, leave the featured speaker as is.
 
     @endpoints.method(message_types.VoidMessage, StringMessage,
                       path='speaker/featured',
@@ -921,8 +921,8 @@ class ConferenceApi(remote.Service):
             )
         q = Session.query(ancestor=conf.key)
         q = q.order(Session.duration)
-        q = q.filter(Session.duration > request.minDuration)
-        sessions = q.filter(Session.duration < request.maxDuration).fetch()
+        q = q.filter(Session.duration >= request.minDuration)
+        sessions = q.filter(Session.duration <= request.maxDuration).fetch()
 
         return SessionForms(items=[self._copySessionToForm(session)
                                    for session in sessions]
