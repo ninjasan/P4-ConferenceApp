@@ -38,6 +38,7 @@ from models import TeeShirtSize
 from models import Session
 from models import SessionForm
 from models import SessionForms
+from models import TypeOfSession
 
 from settings import WEB_CLIENT_ID
 from settings import ANDROID_CLIENT_ID
@@ -64,7 +65,6 @@ DEFAULTS_CONF = {
 DEFAULTS_SESSION = {
     "highlights": "Default",
     "duration": 30,
-    "type_of_session": "Default",
     "speaker": "Default",
     "start_time": 0,
 }
@@ -623,8 +623,13 @@ class ConferenceApi(remote.Service):
         for field in sf.all_fields():
             if hasattr(session, field.name):
                 # convert Date to date string; just copy others
-                if field.name.endswith('date'):
+                if field.name == 'date':
                     setattr(sf, field.name, str(getattr(session, field.name)))
+                elif field.name == 'type_of_session':
+                    val = (getattr(session, field.name))
+                    if val:
+                        val = str(val).upper()
+                        setattr(sf, field.name, getattr(TypeOfSession, val))
                 else:
                     setattr(sf, field.name, getattr(session, field.name))
             elif field.name == "websafeKey":
@@ -701,6 +706,11 @@ class ConferenceApi(remote.Service):
             (time > 2259 and time < 2300) or \
             (time > 2359):
             data['start_time'] = 0
+
+        # Validate that the type of session is good
+        if data['type_of_session']:
+            data['type_of_session'] = str(data['type_of_session']).upper()
+        print(data['type_of_session'])
 
         # convert dates from strings to Date objects; set month based on start_date
         if data['date']:
@@ -806,7 +816,7 @@ class ConferenceApi(remote.Service):
 
     @endpoints.method(CONF_GET_REQUEST, SessionForms,
                       path='conference/{websafeConferenceKey}/session/schedule',
-                      http_method='GET', name='getConferenceSessionSchedule')
+                      http_method='GET', name='getConferenceSessionsSchedule')
     def getConferenceSessionSchedule(self, request):
         """
             Public facing endpoint for a user to get their "schedule" for a conference
@@ -845,7 +855,7 @@ class ConferenceApi(remote.Service):
 
     @endpoints.method(SESSION_DURATION_REQUEST, SessionForms,
                       path='conference/{websafeConferenceKey}/session/duration',
-                      http_method='POST', name='getConferenceSessionByDuration')
+                      http_method='POST', name='getConferenceSessionsByDuration')
     def getConferenceSessionsByDuration(self, request):
         """
             Public facing endpoint for a user to get all the sessions that fit the duration requested
@@ -886,7 +896,7 @@ class ConferenceApi(remote.Service):
             raise endpoints.NotFoundException(
                     'No conference found with key: %s' % request.websafeConferenceKey)
         q = Session.query(ancestor=conf.key)
-        sessions = q.filter(Session.type_of_session == request.typeOfSession).fetch()
+        sessions = q.filter(Session.type_of_session == request.typeOfSession.upper()).fetch()
 
         return SessionForms(
                 items=[self._copySessionToForm(session) for session in sessions]

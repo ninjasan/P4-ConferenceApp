@@ -114,9 +114,9 @@ class Session(ndb.Model):
     """Session -- Session Object"""
     name            = ndb.StringProperty(required=True)
     highlights      = ndb.StringProperty()
-    speaker         = ndb.StringProperty()
+    speaker         = ndb.StringProperty(repeated=True)
     duration        = ndb.IntegerProperty()
-    type_of_session = ndb.StringProperty()
+    type_of_session = ndb.StringProperty(default='NOT_SPECIFIED')
     date            = ndb.DateProperty()
     start_time      = ndb.IntegerProperty()
     conference_id   = ndb.IntegerProperty()
@@ -125,9 +125,9 @@ class SessionForm(messages.Message):
     """SessionForm -- Session outbound form message"""
     name            = messages.StringField(1)
     highlights      = messages.StringField(2)
-    speaker         = messages.StringField(3)
+    speaker         = messages.StringField(3, repeated=True)
     duration        = messages.IntegerField(4)
-    type_of_session = messages.StringField(5)
+    type_of_session = messages.EnumField('TypeOfSession', 5)
     date            = messages.StringField(6)
     start_time      = messages.IntegerField(7, variant=messages.Variant.UINT32)
     conference_id   = messages.IntegerField(8)
@@ -136,3 +136,14 @@ class SessionForm(messages.Message):
 class SessionForms(messages.Message):
     """SessionForms -- multiple Session outbound form message"""
     items = messages.MessageField(SessionForm, 1, repeated=True)
+
+class TypeOfSession(messages.Enum):
+    """TypeOfSession -- session enumeration value"""
+    NOT_SPECIFIED = 1
+    KEYNOTE = 2
+    LECTURE = 3
+    WORKSHOP = 4
+    FORUM = 5
+    PANEL = 6
+    DEMONSTRATION = 7
+    PERFORMANCE = 8
