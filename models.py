@@ -129,7 +129,7 @@ class SessionForm(messages.Message):
     duration        = messages.IntegerField(4)
     type_of_session = messages.StringField(5)
     date            = messages.StringField(6)
-    start_time      = messages.IntegerField(7)
+    start_time      = messages.IntegerField(7, variant=messages.Variant.UINT32)
     conference_id   = messages.IntegerField(8)
     websafeKey      = messages.StringField(9)
 

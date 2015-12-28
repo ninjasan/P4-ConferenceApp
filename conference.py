@@ -674,6 +674,34 @@ class ConferenceApi(remote.Service):
                 data[df] = DEFAULTS_SESSION[df]
                 setattr(request, df, DEFAULTS_SESSION[df])
 
+        # double check start_time is a valid time
+        time = data['start_time']
+        if  (time > 59 and time < 100) or \
+            (time > 159 and time < 200) or \
+            (time > 259 and time < 300) or \
+            (time > 359 and time < 400) or \
+            (time > 459 and time < 500) or \
+            (time > 559 and time < 600) or \
+            (time > 659 and time < 700) or \
+            (time > 759 and time < 800) or \
+            (time > 859 and time < 900) or \
+            (time > 959 and time < 1000) or \
+            (time > 1059 and time < 1100) or \
+            (time > 1159 and time < 1200) or \
+            (time > 1259 and time < 1300) or \
+            (time > 1359 and time < 1400) or \
+            (time > 1459 and time < 1500) or \
+            (time > 1559 and time < 1600) or \
+            (time > 1659 and time < 1700) or \
+            (time > 1759 and time < 1800) or \
+            (time > 1859 and time < 1900) or \
+            (time > 1959 and time < 2000) or \
+            (time > 2059 and time < 2100) or \
+            (time > 2159 and time < 2200) or \
+            (time > 2259 and time < 2300) or \
+            (time > 2359):
+            data['start_time'] = 0
+
         # convert dates from strings to Date objects; set month based on start_date
         if data['date']:
             data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
@@ -879,7 +907,7 @@ class ConferenceApi(remote.Service):
         # perform the inequality filter for sessions starting before 7pm
         q = Session.query()
         q = q.order(Session.start_time)
-        sessions = q.filter(Session.start_time < 19).fetch()
+        sessions = q.filter(Session.start_time < 1900).fetch()
 
         # perform the next "inequality filter" with is an O(n) loop,
         # discarding the sessions that are "workshops"
