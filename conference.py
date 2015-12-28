@@ -981,7 +981,7 @@ class ConferenceApi(remote.Service):
         # discarding the sessions that are "workshops"
         response = []
         for session in sessions:
-            if session.type_of_session != 'workshop':
+            if session.type_of_session != str(TypeOfSession.WORKSHOP):
                 response.append(session)
 
         return SessionForms(items=[self._copySessionToForm(session)
