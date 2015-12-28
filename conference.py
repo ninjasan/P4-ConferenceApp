@@ -107,7 +107,7 @@ SESSION_BY_SPEAKER_GET_REQUEST = endpoints.ResourceContainer(
 SESSION_BY_TYPE_GET_REQUEST = endpoints.ResourceContainer(
         message_types.VoidMessage,
         websafeConferenceKey=messages.StringField(1),
-        typeOfSession=messages.StringField(2),
+        typeOfSession=messages.EnumField(TypeOfSession, 2),
 )
 
 SESSION_WISHLIST_REQUEST = endpoints.ResourceContainer(
@@ -738,7 +738,6 @@ class ConferenceApi(remote.Service):
         # Validate that the type of session is good
         if data['type_of_session']:
             data['type_of_session'] = str(data['type_of_session']).upper()
-        print(data['type_of_session'])
 
         # convert dates from strings to Date objects; set month based on
         # start_date
@@ -952,7 +951,7 @@ class ConferenceApi(remote.Service):
             )
         q = Session.query(ancestor=conf.key)
         sessions = q.filter(
-                Session.type_of_session == request.typeOfSession.upper()
+                Session.type_of_session == str(request.typeOfSession)
         ).fetch()
 
         return SessionForms(
