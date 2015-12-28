@@ -735,25 +735,6 @@ class ConferenceApi(remote.Service):
         prof.put()
         return BooleanMessage(data=retval)
 
-    # SESSION speaker endpoints
-    @endpoints.method(SESSION_BY_SPEAKER_GET_REQUEST, SessionForms,
-                      path='speaker/{speaker}',
-                      http_method='GET', name='getSessionsBySpeaker')
-    def getSessionsBySpeaker(self, request):
-        """
-            Public facing endpoint that gets all the sessions in the datastore
-            that have a specific speaker
-
-        :param request object containing
-                - speaker: the string representing the speaker
-        :return: list of SessionForm objects representing the sessions that fit the query
-        """
-
-        sessions = Session.query(Session.speaker == request.speaker).fetch()
-        return SessionForms(
-                items=[self._copySessionToForm(session) for session in sessions]
-        )
-
     # CONF-specific session queries
     @endpoints.method(SESSION_POST_REQUEST, SessionForm,
                       path='conference/{websafeConferenceKey}/session',
@@ -861,7 +842,7 @@ class ConferenceApi(remote.Service):
                             )
 
     @endpoints.method(SESSION_BY_TYPE_GET_REQUEST, SessionForms,
-                      path='conference/{websafeConferenceKey}/session/{typeOfSession}',
+                      path='conference/{websafeConferenceKey}/session/type/{typeOfSession}',
                       http_method='GET', name='getConferenceSessionsByType')
     def getConferenceSessionsByType(self, request):
         """
@@ -885,7 +866,7 @@ class ConferenceApi(remote.Service):
 
     # SESSION Query
     @endpoints.method(message_types.VoidMessage, SessionForms,
-                      path='sessions/noWorkshopsBefore7pm',
+                      path='session/noWorkshopsBefore7pm',
                       http_method='GET', name='getSessionsNotWorkshopsBefore7pm')
     def getSessionsNotWorkshopsBefore7pm(self, request):
         """
@@ -910,6 +891,24 @@ class ConferenceApi(remote.Service):
         return SessionForms(items=[self._copySessionToForm(session) \
                                    for session in response]
                             )
+
+    @endpoints.method(SESSION_BY_SPEAKER_GET_REQUEST, SessionForms,
+                      path='session/speaker/{speaker}',
+                      http_method='GET', name='getSessionsBySpeaker')
+    def getSessionsBySpeaker(self, request):
+        """
+            Public facing endpoint that gets all the sessions in the datastore
+            that have a specific speaker
+
+        :param request object containing
+                - speaker: the string representing the speaker
+        :return: list of SessionForm objects representing the sessions that fit the query
+        """
+
+        sessions = Session.query(Session.speaker == request.speaker).fetch()
+        return SessionForms(
+                items=[self._copySessionToForm(session) for session in sessions]
+        )
 
     # SESSION WISHLIST endpoints
     @endpoints.method(message_types.VoidMessage, SessionForms,
