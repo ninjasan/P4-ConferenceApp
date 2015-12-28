@@ -491,7 +491,7 @@ class ConferenceApi(remote.Service):
             # Otherwise, leave the featured speaker as is.
 
     @endpoints.method(message_types.VoidMessage, StringMessage,
-                      path='conference/speakers/get',
+                      path='speaker/featured',
                       http_method='GET', name='getFeaturedSpeaker')
     def getFeaturedSpeaker(self, request):
         """
@@ -735,8 +735,28 @@ class ConferenceApi(remote.Service):
         prof.put()
         return BooleanMessage(data=retval)
 
+    # SESSION speaker endpoints
+    @endpoints.method(SESSION_BY_SPEAKER_GET_REQUEST, SessionForms,
+                      path='speaker/{speaker}',
+                      http_method='GET', name='getSessionsBySpeaker')
+    def getSessionsBySpeaker(self, request):
+        """
+            Public facing endpoint that gets all the sessions in the datastore
+            that have a specific speaker
+
+        :param request object containing
+                - speaker: the string representing the speaker
+        :return: list of SessionForm objects representing the sessions that fit the query
+        """
+
+        sessions = Session.query(Session.speaker == request.speaker).fetch()
+        return SessionForms(
+                items=[self._copySessionToForm(session) for session in sessions]
+        )
+
+    # CONF-specific session queries
     @endpoints.method(SESSION_POST_REQUEST, SessionForm,
-                      path='conference/sessions',
+                      path='conference/{websafeConferenceKey}/session',
                       http_method='POST', name='createSession')
     def createSession(self, request):
         """
@@ -750,53 +770,8 @@ class ConferenceApi(remote.Service):
         """
         return self._createSessionObject(request)
 
-    @endpoints.method(message_types.VoidMessage, SessionForms,
-                      path='conferences/sessions/attending',
-                      http_method='GET', name='getSessionsInWishlist')
-    def getSessionsInWishlist(self, request):
-        """
-            Public facing endpoint used for a user to see what sessions are in their wishlist
-
-        :param request object which is Void
-        :return: list of SessionForm objects representing the sessions in the user's wishlist
-        """
-        prof = self._getProfileFromUser()
-        session_keys = [ndb.Key(urlsafe=wssk) for wssk in prof.sessionKeysInWishlist]
-        sessions = ndb.get_multi(session_keys)
-
-        return SessionForms(items=[self._copySessionToForm(session) \
-                                   for session in sessions]
-                            )
-
-    @endpoints.method(message_types.VoidMessage, SessionForms,
-                      path='conferences/sessions/noWorkshopsBefore7pm',
-                      http_method='GET', name='getSessionsNotWorkshopsBefore7pm')
-    def getSessionsNotWorkshopsBefore7pm(self, request):
-        """
-            Public facing endpoint that filters the sessions to those that are
-            not workshops and start before 7pm.
-
-        :param request object which is Void
-        :return: list of SessionForm objects representing the sessions that fit the query
-        """
-        # perform the inequality filter for sessions starting before 7pm
-        q = Session.query()
-        q = q.order(Session.start_time)
-        sessions = q.filter(Session.start_time < 19).fetch()
-
-        # perform the next "inequality filter" with is an O(n) loop,
-        # discarding the sessions that are "workshops"
-        response = []
-        for session in sessions:
-            if session.type_of_session != 'workshop':
-                response.append(session)
-
-        return SessionForms(items=[self._copySessionToForm(session) \
-                                   for session in response]
-                            )
-
     @endpoints.method(CONF_GET_REQUEST, SessionForms,
-                      path='conference/sessions/{websafeConferenceKey}',
+                      path='conference/{websafeConferenceKey}/session',
                       http_method='GET', name='getConferenceSessions')
     def getConferenceSessions(self, request):
         """
@@ -820,77 +795,10 @@ class ConferenceApi(remote.Service):
                 items=[self._copySessionToForm(session) for session in sessions]
         )
 
-    @endpoints.method(SESSION_BY_SPEAKER_GET_REQUEST, SessionForms,
-                      path='conference/sessions/speaker/{speaker}',
-                      http_method='GET', name='getSessionsBySpeaker')
-    def getSessionsBySpeaker(self, request):
-        """
-            Public facing endpoint that gets all the sessions in the datastore
-            that have a specific speaker
-
-        :param request object containing
-                - speaker: the string representing the speaker
-        :return: list of SessionForm objects representing the sessions that fit the query
-        """
-
-        sessions = Session.query(Session.speaker == request.speaker).fetch()
-        return SessionForms(
-                items=[self._copySessionToForm(session) for session in sessions]
-        )
-
-    @endpoints.method(SESSION_BY_TYPE_GET_REQUEST, SessionForms,
-                      path='conference/sessions/type/{websafeConferenceKey}',
-                      http_method='GET', name='getConferenceSessionsByType')
-    def getConferenceSessionsByType(self, request):
-        """
-            Public facing endpoint that gets sessions based on the type for a conference
-
-        :param request object containing
-                - websafeConferenceKey: the websafeKey of the Conference to filter to
-                - typeOfSession: the session that the user wants to filter to
-        :return: list of SessionForm objects representing the sessions that fit the query
-        """
-        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
-        if not conf:
-            raise endpoints.NotFoundException(
-                    'No conference found with key: %s' % request.websafeConferenceKey)
-        q = Session.query(ancestor=conf.key)
-        sessions = q.filter(Session.type_of_session == request.typeOfSession).fetch()
-
-        return SessionForms(
-                items=[self._copySessionToForm(session) for session in sessions]
-        )
-
-    @endpoints.method(SESSION_WISHLIST_REQUEST, BooleanMessage,
-                      path='conference/sessions/register/{websafeSessionKey}',
-                      http_method='POST', name='addSessionToWishlist')
-    def addSessionToWishlist(self, request):
-        """
-            Public facing endpoint that a user calls when they want to add a session to their wishlist
-
-        :param request object containing
-                - websafeSessionKey: the websafeKey of the Session to add to the wishlist
-        :return: response of the _sessionWishlist function
-        """
-        return self._sessionWishlist(request)
-
-    @endpoints.method(SESSION_WISHLIST_REQUEST, BooleanMessage,
-                      path='conference/sessions/unregister/{websafeSessionKey}',
-                      http_method='GET', name='removeSessionFromWishlist')
-    def removeSessionFromWishlist(self, request):
-        """
-            Public facing endpoint that a user calls when they want to remove a session from their wishlist
-
-        :param request object containing
-                - websafeSessionKey: the websafeKey of the Session to add to the wishlist
-        :return: response of the _sessionWishlist function
-        """
-        return self._sessionWishlist(request, False)
-
     @endpoints.method(CONF_GET_REQUEST, SessionForms,
-                      path='conference/sessions/schedule/{websafeConferenceKey}',
-                      http_method='DELETE', name='getSessionSchedule')
-    def getSessionSchedule(self, request):
+                      path='conference/{websafeConferenceKey}/session/schedule',
+                      http_method='GET', name='getConferenceSessionSchedule')
+    def getConferenceSessionSchedule(self, request):
         """
             Public facing endpoint for a user to get their "schedule" for a conference
             i.e. all the sessions in their wishlist, ordered by date and start_time
@@ -927,9 +835,9 @@ class ConferenceApi(remote.Service):
                             )
 
     @endpoints.method(SESSION_DURATION_REQUEST, SessionForms,
-                      path='conference/sessions/duration/{websafeConferenceKey}',
-                      http_method='GET', name='getSessionByDuration')
-    def getSessionsByDuration(self, request):
+                      path='conference/{websafeConferenceKey}/session/duration',
+                      http_method='POST', name='getConferenceSessionByDuration')
+    def getConferenceSessionsByDuration(self, request):
         """
             Public facing endpoint for a user to get all the sessions that fit the duration requested
 
@@ -951,5 +859,101 @@ class ConferenceApi(remote.Service):
         return SessionForms(items=[self._copySessionToForm(session) \
                                    for session in sessions]
                             )
+
+    @endpoints.method(SESSION_BY_TYPE_GET_REQUEST, SessionForms,
+                      path='conference/{websafeConferenceKey}/session/{typeOfSession}',
+                      http_method='GET', name='getConferenceSessionsByType')
+    def getConferenceSessionsByType(self, request):
+        """
+            Public facing endpoint that gets sessions based on the type for a conference
+
+        :param request object containing
+                - websafeConferenceKey: the websafeKey of the Conference to filter to
+                - typeOfSession: the session that the user wants to filter to
+        :return: list of SessionForm objects representing the sessions that fit the query
+        """
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        if not conf:
+            raise endpoints.NotFoundException(
+                    'No conference found with key: %s' % request.websafeConferenceKey)
+        q = Session.query(ancestor=conf.key)
+        sessions = q.filter(Session.type_of_session == request.typeOfSession).fetch()
+
+        return SessionForms(
+                items=[self._copySessionToForm(session) for session in sessions]
+        )
+
+    # SESSION Query
+    @endpoints.method(message_types.VoidMessage, SessionForms,
+                      path='sessions/noWorkshopsBefore7pm',
+                      http_method='GET', name='getSessionsNotWorkshopsBefore7pm')
+    def getSessionsNotWorkshopsBefore7pm(self, request):
+        """
+            Public facing endpoint that filters the sessions to those that are
+            not workshops and start before 7pm.
+
+        :param request object which is Void
+        :return: list of SessionForm objects representing the sessions that fit the query
+        """
+        # perform the inequality filter for sessions starting before 7pm
+        q = Session.query()
+        q = q.order(Session.start_time)
+        sessions = q.filter(Session.start_time < 19).fetch()
+
+        # perform the next "inequality filter" with is an O(n) loop,
+        # discarding the sessions that are "workshops"
+        response = []
+        for session in sessions:
+            if session.type_of_session != 'workshop':
+                response.append(session)
+
+        return SessionForms(items=[self._copySessionToForm(session) \
+                                   for session in response]
+                            )
+
+    # SESSION WISHLIST endpoints
+    @endpoints.method(message_types.VoidMessage, SessionForms,
+                      path='session/wishlist',
+                      http_method='GET', name='getSessionsInWishlist')
+    def getSessionsInWishlist(self, request):
+        """
+            Public facing endpoint used for a user to see what sessions are in their wishlist
+
+        :param request object which is Void
+        :return: list of SessionForm objects representing the sessions in the user's wishlist
+        """
+        prof = self._getProfileFromUser()
+        session_keys = [ndb.Key(urlsafe=wssk) for wssk in prof.sessionKeysInWishlist]
+        sessions = ndb.get_multi(session_keys)
+
+        return SessionForms(items=[self._copySessionToForm(session) \
+                                   for session in sessions]
+                            )
+
+    @endpoints.method(SESSION_WISHLIST_REQUEST, BooleanMessage,
+                      path='session/{websafeSessionKey}',
+                      http_method='POST', name='addSessionToWishlist')
+    def addSessionToWishlist(self, request):
+        """
+            Public facing endpoint that a user calls when they want to add a session to their wishlist
+
+        :param request object containing
+                - websafeSessionKey: the websafeKey of the Session to add to the wishlist
+        :return: response of the _sessionWishlist function
+        """
+        return self._sessionWishlist(request)
+
+    @endpoints.method(SESSION_WISHLIST_REQUEST, BooleanMessage,
+                      path='session/{websafeSessionKey}',
+                      http_method='DELETE', name='removeSessionFromWishlist')
+    def removeSessionFromWishlist(self, request):
+        """
+            Public facing endpoint that a user calls when they want to remove a session from their wishlist
+
+        :param request object containing
+                - websafeSessionKey: the websafeKey of the Session to add to the wishlist
+        :return: response of the _sessionWishlist function
+        """
+        return self._sessionWishlist(request, False)
 
 api = endpoints.api_server([ConferenceApi])  # register API
