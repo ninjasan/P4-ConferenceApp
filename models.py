@@ -58,7 +58,7 @@ class Conference(ndb.Model):
     topics          = ndb.StringProperty(repeated=True)
     city            = ndb.StringProperty()
     startDate       = ndb.DateProperty()
-    month           = ndb.IntegerProperty() # TODO: do we need for indexing like Java?
+    month           = ndb.IntegerProperty()
     endDate         = ndb.DateProperty()
     maxAttendees    = ndb.IntegerProperty()
     seatsAvailable  = ndb.IntegerProperty()
@@ -107,7 +107,10 @@ class ConferenceQueryForm(messages.Message):
     value = messages.StringField(3)
 
 class ConferenceQueryForms(messages.Message):
-    """ConferenceQueryForms -- multiple ConferenceQueryForm inbound form message"""
+    """
+        ConferenceQueryForms --
+        multiple ConferenceQueryForm inbound form message
+    """
     filters = messages.MessageField(ConferenceQueryForm, 1, repeated=True)
 
 class Session(ndb.Model):
@@ -147,3 +150,4 @@ class TypeOfSession(messages.Enum):
     PANEL = 6
     DEMONSTRATION = 7
     PERFORMANCE = 8
+    DEFAULT = 9
