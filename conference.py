@@ -111,7 +111,7 @@ SESSION_BY_TYPE_GET_REQUEST = endpoints.ResourceContainer(
         typeOfSession=messages.StringField(2),
 )
 
-SESSION_ADD_REQUEST = endpoints.ResourceContainer(
+SESSION_WISHLIST_REQUEST = endpoints.ResourceContainer(
         message_types.VoidMessage,
         websafeSessionKey=messages.StringField(1),
 )
@@ -861,7 +861,7 @@ class ConferenceApi(remote.Service):
                 items=[self._copySessionToForm(session) for session in sessions]
         )
 
-    @endpoints.method(SESSION_ADD_REQUEST, BooleanMessage,
+    @endpoints.method(SESSION_WISHLIST_REQUEST, BooleanMessage,
                       path='conference/sessions/register/{websafeSessionKey}',
                       http_method='POST', name='addSessionToWishlist')
     def addSessionToWishlist(self, request):
@@ -874,10 +874,10 @@ class ConferenceApi(remote.Service):
         """
         return self._sessionWishlist(request)
 
-    @endpoints.method(SESSION_ADD_REQUEST, BooleanMessage,
+    @endpoints.method(SESSION_WISHLIST_REQUEST, BooleanMessage,
                       path='conference/sessions/unregister/{websafeSessionKey}',
-                      http_method='POST', name='deleteSessionInWishlist')
-    def deleteSessionInWishlist(self, request):
+                      http_method='GET', name='removeSessionFromWishlist')
+    def removeSessionFromWishlist(self, request):
         """
             Public facing endpoint that a user calls when they want to remove a session from their wishlist
 
@@ -889,7 +889,7 @@ class ConferenceApi(remote.Service):
 
     @endpoints.method(CONF_GET_REQUEST, SessionForms,
                       path='conference/sessions/schedule/{websafeConferenceKey}',
-                      http_method='GET', name='getSessionSchedule')
+                      http_method='DELETE', name='getSessionSchedule')
     def getSessionSchedule(self, request):
         """
             Public facing endpoint for a user to get their "schedule" for a conference

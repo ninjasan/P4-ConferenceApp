@@ -39,8 +39,7 @@ class SendConfirmationEmailHandler(webapp2.RequestHandler):
 
 class SetFeaturedSpeaker(webapp2.RequestHandler):
     def post(self):
-        """Does work to figure out if speaker should be featured"""
-        print("**********I'M IN A TAAAAAAAAAAAAASK!!!!!!!!!!!!!!")
+        """admin accessible request handler used to set the featured speaker"""
         ConferenceApi._setFeaturedSpeaker(self.request.get('speaker'), self.request.get('wsck'))
 
 
