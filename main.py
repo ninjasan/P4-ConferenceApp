@@ -37,8 +37,19 @@ class SendConfirmationEmailHandler(webapp2.RequestHandler):
                 'conferenceInfo')
         )
 
+class SetFeaturedSpeaker(webapp2.RequestHandler):
+    def post(self):
+        """Does work to figure out if speaker should be featured"""
+        print("**********I'M IN A TAAAAAAAAAAAAASK!!!!!!!!!!!!!!")
+        ConferenceApi._setFeaturedSpeaker(self.request.get('speaker'), self.request.get('wsck'))
 
-app = webapp2.WSGIApplication([
-    ('/crons/set_announcement', SetAnnouncementHandler),
-    ('/tasks/send_confirmation_email', SendConfirmationEmailHandler),
-], debug=True)
+
+
+app = webapp2.WSGIApplication(
+    [
+        ('/crons/set_announcement', SetAnnouncementHandler),
+        ('/tasks/send_confirmation_email', SendConfirmationEmailHandler),
+        ('/tasks/set_featured_speaker', SetFeaturedSpeaker),
+    ],
+    debug=True)
+
